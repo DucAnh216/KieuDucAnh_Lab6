@@ -1,0 +1,74 @@
+﻿@model ASC.Web.Areas.Accounts.Models.ProfileModel
+
+@{
+    Layout = "_SecureLayout";
+}
+
+<div class="row">
+    <div class="col s12">
+        <h5>Profile</h5>
+    </div>
+    </ دهد
+
+    <div class="divider"></div>
+
+    <div class="row">
+        <div class="col s12">
+            <form asp-action="Profile" method="post" id="profileForm">
+                @Html.AntiForgeryToken()
+
+                <div class="input-field col s6">
+                    <label asp-for="UserName"></label>
+                    <input asp-for="UserName" class="validate" />
+                    <span asp-validation-for="UserName" class="helper-text red-text"></span>
+                </div>
+
+                <div class="input-field col s6">
+                    <label>Account Status</label>
+                    <p>@(Model.IsActive ? "Active" : "Inactive")</p>
+                </div>
+
+                <div class="input-field col s12 right-align">
+                    <button type="submit" class="btn waves-effect waves-light">
+                        Update Profile <i class="material-icons right">send</i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            $(document).ready(function () {
+                M.updateTextFields();
+
+                $('#profileForm').on('submit', function (e) {
+                    e.preventDefault();
+                    var formData = $(this).serialize();
+
+                    $.ajax({
+                        url: '@Url.Action("Profile", "Account")',
+                        type: 'POST',
+                        data: formData,
+                        success: function (response) {
+                            if (response.success) {
+                                M.toast({ html: response.message, classes: 'green' });
+                                $('#UserName').val(response.userName);
+                                try {
+                                    M.updateTextFields();
+                                } catch (e) {
+                                    console.error('Materialize error:', e);
+                                }
+                            } else {
+                                M.toast({ html: response.message, classes: 'red' });
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error('AJAX error:', error);
+                            M.toast({ html: 'An error occurred while updating the profile.', classes: 'red' });
+                        }
+                    });
+                });
+            });
+        </script>
+    }

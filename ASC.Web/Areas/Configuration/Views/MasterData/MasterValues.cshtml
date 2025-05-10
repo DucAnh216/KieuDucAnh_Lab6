@@ -1,0 +1,173 @@
+﻿@model ASC.Web.Areas.Configuration.Models.MasterValuesViewModel
+@{
+    Layout = "_SecureLayout";
+}
+
+<div class="row">
+    <div class="row padding-top-20px padding-left-20px padding-right-20px">
+        <div class="z-depth-3">
+            <div class="section white-text padding-left-10px blue-grey lighten-1">
+                <h5>Master Values <span id="loading" style="display:none;">Loading...</span></h5>
+            </div>
+            <div class="divider"></div>
+            <div class="col s12 padding-bottom-15px">
+                @if (Model.MasterValues != null && Model.MasterValues.Any())
+                {
+                    <table class="highlight centered" id="tblMasterValues">
+                        <thead>
+                            <tr>
+                                <th>Row Key</th>
+                                <th>Name</th>
+                                <th>Value</th>
+                                <th>Is Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var value in Model.MasterValues)
+                            {
+                                <tr>
+                                    <td>@value.RowKey</td>
+                                    <td>@value.Name</td>
+                                    <td>@value.Value</td>
+                                    <td>
+                                        <img src="@(value.IsActive ? "/images/green_tick.png" : "/images/red_cross.png")"
+                                             alt="@(value.IsActive ? "Active" : "Inactive")" />
+                                    </td>
+                                    <td>
+                                        <i class="small material-icons edit cursor-hand"
+                                           data-rowkey="@value.RowKey"
+                                           data-name="@value.Name"
+                                           data-value="@value.Value"
+                                           data-isactive="@value.IsActive.ToString().ToLower()">mode_edit</i>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="card blue-grey lighten-2">
+                        <div class="card-content white-text">
+                            <span class="card-title">No Master Values</span>
+                            <p>No Master Values found. Please add a Master Value to the system.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form Master Value -->
+<div class="row z-depth-3">
+    <div class="col s12 padding-20px">
+        <div class="section white-text padding-left-10px blue-grey lighten-1">
+            <h5>Master Value Details</h5>
+        </div>
+        <div class="divider"></div>
+
+        @using (Html.BeginForm("MasterValues", "MasterData", FormMethod.Post, new { id = "formMasterValue" }))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.PartitionKey)
+            @Html.HiddenFor(m => m.RowKey)
+
+            <div class="input-field col s4">
+                @Html.LabelFor(m => m.Name, "Name", new { @class = "active" })
+                @Html.TextBoxFor(m => m.Name, new { @class = "validate", required = "required", id = "MasterValue_Name" })
+                @Html.ValidationMessageFor(m => m.Name, "", new { @class = "helper-text red-text" })
+            </div>
+
+            <div class="input-field col s4">
+                @Html.LabelFor(m => m.Value, "Value", new { @class = "active" })
+                @Html.TextBoxFor(m => m.Value, new { @class = "validate", required = "required", id = "MasterValue_Value" })
+                @Html.ValidationMessageFor(m => m.Value, "", new { @class = "helper-text red-text" })
+            </div>
+
+            <div class="input-field col s4">
+                <div class="switch">
+                    <label>
+                        Inactive
+                        @Html.CheckBoxFor(m => m.IsActive, new { id = "MasterValue_IsActive" })
+                        <span class="lever"></span>
+                        Active
+                    </label>
+                </div>
+            </div>
+
+            <div class="input-field col s12 right-align">
+                <button class="btn waves-effect waves-light btnSubmit" type="submit">
+                    <i class="material-icons right">send</i>@(string.IsNullOrEmpty(Model.RowKey) ? "Create" : "Save")
+                </button>
+                <button class="btn waves-effect waves-light red lighten-1 reset" type="button">Reset</button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Form Import Excel -->
+<div class="row z-depth-3">
+    <div class="col s12 padding-20px">
+        <div class="section white-text padding-left-10px blue-grey lighten-1">
+            <h5>Import Master Values from Excel</h5>
+        </div>
+        <div class="divider"></div>
+        @using (Html.BeginForm("ImportExcel", "MasterData", FormMethod.Post, new { enctype = "multipart/form-data", id = "formImportExcel" }))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.PartitionKey)
+
+            <div class="file-field input-field col s6">
+                <div class="btn">
+                    <span>File</span>
+                    <input type="file" name="excelFile" accept=".xlsx,.xls" required />
+                </div>
+                <div class="file-path-wrapper">
+                    <input class="file-path validate" type="text" placeholder="Select Excel file (Name, Value, IsActive)" />
+                </div>
+            </div>
+
+            <div class="input-field col s12 right-align">
+                <button class="btn waves-effect waves-light" type="submit">
+                    <i class="material-icons right">upload</i>Import
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.reset').on('click', function () {
+                $('#formMasterValue')[0].reset();
+                $('#RowKey').val('');
+                $('#PartitionKey').val('@Model.PartitionKey');
+                $('.btnSubmit').text('Create');
+                $('.field-validation-error').text('');
+                M.updateTextFields();
+            });
+
+            $(document).on('click', '.edit', function () {
+                $('#RowKey').val($(this).data('rowkey'));
+                $('#MasterValue_Name').val($(this).data('name'));
+                $('#MasterValue_Value').val($(this).data('value'));
+                $('#MasterValue_IsActive').prop('checked', $(this).data('isactive') === 'true');
+                $('#PartitionKey').val('@Model.PartitionKey');
+                $('.btnSubmit').text('Save');
+                M.updateTextFields();
+            });
+
+            // ✅ Đảm bảo giữ PartitionKey khi submit
+            $('#formMasterValue').on('submit', function () {
+                $('#PartitionKey').val('@Model.PartitionKey');
+            });
+
+            $('#formImportExcel').on('submit', function () {
+                $('#PartitionKey').val('@Model.PartitionKey');
+            });
+        });
+    </script>
+}

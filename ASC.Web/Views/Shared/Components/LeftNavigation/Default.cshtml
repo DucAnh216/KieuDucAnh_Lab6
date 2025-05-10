@@ -1,0 +1,55 @@
+﻿@using Microsoft.AspNetCore.Http
+@using ASC.Utilities
+@model ASC.Web.Models.NavigationMenu
+@inject IHttpContextAccessor UserHttpContext
+
+@{
+    var currentUser = UserHttpContext?.HttpContext?.User.GetCurrentUserDetails();
+}
+
+@if (Model != null)
+{
+    @foreach (var menuItem in Model.MenuItems ?? Enumerable.Empty<ASC.Web.Models.NavigationMenuItem>())
+    {
+        var userRoles = currentUser?.Roles ?? Enumerable.Empty<string>();
+        if (menuItem != null && userRoles.Intersect(menuItem.UserRoles ?? Enumerable.Empty<string>()).Any())
+        {
+            if (menuItem.IsNested)
+            {
+                <ul class="collapsible collapsible-accordion">
+                    <li>
+                        <a class="collapsible-header" id="@(string.Format("ancr{0}", menuItem.DisplayName?.Replace(" ", "") ?? ""))">
+                            @(menuItem.DisplayName ?? "Không có tên")
+                            <i class="material-icons">@(menuItem.MaterialIcon ?? "default_icon")</i>
+                        </a>
+                        <div class="collapsible-body">
+                            <ul>
+                                @foreach (var subMenuItem in menuItem.NestedItems?.OrderBy(p => p.Sequence) ?? Enumerable.Empty<ASC.Web.Models.NavigationMenuItem>())
+                                {
+                                    if (subMenuItem != null && userRoles.Intersect(subMenuItem.UserRoles ?? Enumerable.Empty<string>()).Any())
+                                    {
+                                        <li>
+                                            <a href="@(subMenuItem.Link ?? "#")" id="@(string.Format("ancr{0}", subMenuItem.DisplayName?.Replace(" ", "") ?? ""))">
+                                                @(subMenuItem.DisplayName ?? "Không có tên")
+                                                <i class="material-icons">@(subMenuItem.MaterialIcon ?? "default_icon")</i>
+                                            </a>
+                                        </li>
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            }
+            else
+            {
+                <li>
+                    <a href="@(menuItem.Link ?? "#")" id="@(string.Format("ancr{0}", menuItem.DisplayName?.Replace(" ", "") ?? ""))" class="collapsible-header">
+                        <i class="material-icons">@(menuItem.MaterialIcon ?? "default_icon")</i>
+                        @(menuItem.DisplayName ?? "Không có tên")
+                    </a>
+                </li>
+            }
+        }
+    }
+}

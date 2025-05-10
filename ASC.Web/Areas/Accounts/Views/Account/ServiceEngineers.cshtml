@@ -1,0 +1,271 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@inject UserManager<IdentityUser> userManager
+@model ASC.Web.Areas.Accounts.Models.ServiceEngineerViewModel
+
+@{
+    Layout = "_SecureLayout";
+}
+
+<div class="row">
+    <div class="col s12">
+        <h5>Service Engineers</h5>
+    </div>
+</div>
+<div class="divider"></div>
+
+<div class="col s12 padding-bottom-15px">
+    @if (Model.ServiceEngineers != null && Model.ServiceEngineers.Any())
+    {
+        <table class="highlight centered" id="tblServiceEngineers">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>User Name</th>
+                    <th>Is Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var engineer in Model.ServiceEngineers)
+                {
+                    var claims = await userManager.GetClaimsAsync(engineer);
+                    var isActiveClaim = claims.FirstOrDefault(c => c.Type == "IsActive");
+                    bool isActive = false;
+                    if (isActiveClaim != null)
+                    {
+                        bool.TryParse(isActiveClaim.Value, out isActive);
+                    }
+
+                    <tr data-isactive="@isActive.ToString().ToLower()" data-email="@engineer.Email">
+                        <td>@engineer.Email</td>
+                        <td>@(engineer.UserName ?? "N/A")</td>
+                        <td>
+                            <img src="~/images/@(isActive ? "green_tick.png" : "red_cross.png")" alt="@(isActive ? "Active" : "Inactive")" />
+                        </td>
+                        <td>
+                            <i class="small material-icons edit cursor--hand">mode_edit</i>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="card blue-grey lighten-1">
+            <div class="card-content white-text">
+                <span class="card-title">No Service Engineers Found</span>
+                <p>No service engineers found. Please add an engineer to the system.</p>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="row z-depth-3">
+    <div class="col s12 padding-0px">
+        <h5>Service Engineer Details</h5>
+    </div>
+    <div class="divider"></div>
+
+    <form asp-controller="Account" asp-action="ServiceEngineers" method="post" class="col s12" id="formUser">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Registration.IsEdit" id="Registration_IsEdit" />
+        <input type="hidden" asp-for="Registration.Email" id="Registration_Email" />
+
+        <div class="input-field col s3">
+            <label for="Input_Registration_Email">Email</label>
+            <input asp-for="Registration.Email" id="Input_Registration_Email" class="validate" />
+            <span asp-validation-for="Registration.Email" class="helper-text red-text"></span>
+        </div>
+
+        <div class="input-field col s3">
+            <label for="Input_Registration_UserName">User Name</label>
+            <input asp-for="Registration.UserName" id="Input_Registration_UserName" class="validate" />
+            <span asp-validation-for="Registration.UserName" class="helper-text red-text"></span>
+        </div>
+
+        <div class="input-field col s2">
+            <label for="Input_Registration_Password">Password</label>
+            <input asp-for="Registration.Password" id="Input_Registration_Password" class="validate" />
+            <span asp-validation-for="Registration.Password" class="helper-text red-text"></span>
+        </div>
+
+        <div class="input-field col s2">
+            <label for="Input_Registration_ConfirmPassword">Confirm Password</label>
+            <input asp-for="Registration.ConfirmPassword" id="Input_Registration_ConfirmPassword" class="validate" />
+            <span asp-validation-for="Registration.ConfirmPassword" class="helper-text red-text"></span>
+        </div>
+
+        <div class="input-field col s2">
+            <div class="switch">
+                <label>
+                    Inactive
+                    <input asp-for="Registration.IsActive" id="Registration_IsActive" type="checkbox" />
+                    <span class="lever"></span>
+                    Active
+                </label>
+            </div>
+        </div>
+
+        <div class="input-field col s2 right-align">
+            <button class="btn waves-effect waves-light btnSubmit" type="submit" name="action">
+                Submit <i class="material-icons right">send</i>
+            </button>
+            <button class="btn waves-effect waves-light red lighten-1 reset" type="button" name="action">
+                Reset
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            console.log('jQuery ready in ServiceEngineers.cshtml');
+
+            try {
+                var table = $('#tblServiceEngineers').DataTable({
+                    pageLength: 3,
+                    lengthMenu: [[3, 5, 10, -1], [3, 5, 10, "All"]],
+                    autoWidth: false
+                });
+                console.log('DataTable initialized');
+            } catch (e) {
+                console.error('DataTable error:', e);
+            }
+
+            $('.btnSubmit').attr('disabled', 'disabled');
+            console.log('Submit button disabled');
+
+            $(document).on('click', '.reset', function () {
+                console.log('Reset button clicked');
+                $('#formUser')[0].reset();
+                $('#Input_Registration_Email').removeAttr('readonly');
+                $('#Registration_IsEdit').val('False');
+                $('#Registration_IsActive').prop('checked', false);
+                $('.btnSubmit').attr('disabled', 'disabled');
+                try {
+                    M.updateTextFields();
+                    console.log('Materialize updated');
+                } catch (e) {
+                    console.error('Materialize error:', e);
+                }
+            });
+
+            if ($('#Registration_IsEdit').val() === 'True') {
+                $('#Input_Registration_Email').attr('readonly', 'readonly');
+                $('#Input_Registration_Password').removeAttr('required');
+                $('#Input_Registration_ConfirmPassword').removeAttr('required');
+                $('.btnSubmit').removeAttr('disabled');
+                console.log('Edit mode enabled');
+            }
+
+            $(document).on('click', '.edit', function () {
+                console.log('Edit button clicked');
+                var row = $(this).closest('tr');
+                var rowData = table.row(row).data();
+                var email = rowData[0];
+                var userName = rowData[1];
+                var isActive = row.data('isactive') === 'true';
+
+                $('#Registration_IsEdit').val('True');
+                $('#Input_Registration_Email').val(email).attr('readonly', 'readonly');
+                $('#Input_Registration_UserName').val(userName);
+                $('#Registration_Email').val(email);
+                $('#Registration_IsActive').prop('checked', isActive);
+                $('#Input_Registration_Password').val('').removeAttr('required');
+                $('#Input_Registration_ConfirmPassword').val('').removeAttr('required');
+                $('.btnSubmit').removeAttr('disabled');
+
+                try {
+                    M.updateTextFields();
+                    console.log('Materialize updated');
+                } catch (e) {
+                    console.error('Materialize error:', e);
+                }
+            });
+
+            $(document).on('submit', '#formUser', function (e) {
+                e.preventDefault();
+                console.log('Form submitted');
+
+                var isEdit = $('#Registration_IsEdit').val() === 'True';
+                if (isEdit) {
+                    this.submit();
+                    return;
+                }
+
+                var formData = $(this).serialize();
+                $.ajax({
+                    url: '@Url.Action("ServiceEngineers", "Account")',
+                    type: 'POST',
+                    data: formData,
+                    success: function (response) {
+                        if (response.success) {
+                            console.log('Engineer created successfully:', response.engineer);
+
+                            table.row.add([
+                                response.engineer.email,
+                                response.engineer.userName,
+                                `<img src="/images/${response.engineer.isActive ? 'green_tick.png' : 'red_cross.png'}" alt="${response.engineer.isActive ? 'Active' : 'Inactive'}" />`,
+                                '<i class="small material-icons edit cursor--hand">mode_edit</i>'
+                            ]).draw();
+
+                            $('#formUser')[0].reset();
+                            $('#Input_Registration_Email').removeAttr('readonly');
+                            $('#Registration_IsEdit').val('False');
+                            $('#Registration_IsActive').prop('checked', false);
+                            $('.btnSubmit').attr('disabled', 'disabled');
+                            try {
+                                M.updateTextFields();
+                                console.log('Materialize updated');
+                            } catch (e) {
+                                console.error('Materialize error:', e);
+                            }
+                            M.toast({ html: 'Engineer created successfully!', classes: 'green' });
+                        } else {
+                            console.error('Failed to create engineer:', response.errors || response.message);
+                            M.toast({ html: 'Failed to create engineer: ' + (response.message || response.errors.join(', ')), classes: 'red' });
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX error:', error);
+                        console.error('Response:', xhr.responseText);
+                        M.toast({ html: 'An error occurred while creating the engineer.', classes: 'red' });
+                    }
+                });
+            });
+
+            $(document).on('click', '.btnSubmit', function () {
+                console.log('Submit button clicked');
+                $('#Registration_Email').val($('#Input_Registration_Email').val());
+            });
+
+            // Enable submit button when required fields are filled
+            $('#formUser input').on('input', function () {
+                var email = $('#Input_Registration_Email').val().trim();
+                var userName = $('#Input_Registration_UserName').val().trim();
+                var password = $('#Input_Registration_Password').val().trim();
+                var confirmPassword = $('#Input_Registration_ConfirmPassword').val().trim();
+                var isEdit = $('#Registration_IsEdit').val() === 'True';
+
+                if (isEdit) {
+                    // When editing, only email and username are required
+                    if (email && userName) {
+                        $('.btnSubmit').removeAttr('disabled');
+                    } else {
+                        $('.btnSubmit').attr('disabled', 'disabled');
+                    }
+                } else {
+                    // When creating new, all fields are required
+                    if (email && userName && password && confirmPassword && password === confirmPassword) {
+                        $('.btnSubmit').removeAttr('disabled');
+                    } else {
+                        $('.btnSubmit').attr('disabled', 'disabled');
+                    }
+                }
+            });
+        });
+    </script>
+}

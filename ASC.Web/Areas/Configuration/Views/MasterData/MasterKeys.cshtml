@@ -1,0 +1,127 @@
+﻿@model ASC.Web.Areas.Configuration.Models.MasterKeysViewModel
+@{
+    Layout = "_SecureLayout";
+}
+
+<div class="row">
+    <div class="row padding-top-20px padding-left-20px padding-right-20px">
+        <div class="z-depth-3">
+            <div class="section white-text padding-left-10px blue-grey lighten-1">
+                <h5>Master Keys <span id="loading" style="display:none;">Loading...</span></h5>
+            </div>
+            <div class="divider"></div>
+            <div class="col s12 padding-bottom-15px">
+                @if (Model.MasterKeys?.Any() == true)
+                {
+                    <table class="highlight centered" id="tblMasterKeys">
+                        <thead>
+                            <tr>
+                                <th>Row Key</th>
+                                <th>Name</th>
+                                <th>Is Active</th>
+                                <th>Actions</th>
+                                <th>Values</th> <!-- THÊM CỘT LIÊN KẾT VALUES -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var key in Model.MasterKeys)
+                            {
+                                <tr>
+                                    <td>@key.RowKey</td>
+                                    <td>@key.Name</td>
+                                    <td>
+                                        <img src="@(key.IsActive ? "/images/green_tick.png" : "/images/red_cross.png")" />
+                                    </td>
+                                    <td>
+                                        <i class="material-icons edit cursor-hand"
+                                           data-rowkey="@key.RowKey"
+                                           data-partitionkey="@key.PartitionKey"
+                                           data-name="@key.Name"
+                                           data-isactive="@key.IsActive.ToString().ToLower()">mode_edit</i>
+                                    </td>
+                                    <td>
+                                        <a class="btn blue btn-small"
+                                           href="@Url.Action("MasterValues", "MasterData", new { area = "Configuration", partitionKey = key.PartitionKey })">
+                                            View Values
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No Master Keys found.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row z-depth-3">
+    <div class="col s12 padding-20px">
+        <div class="section white-text padding-left-10px blue-grey lighten-1">
+            <h5>Master Key Details</h5>
+        </div>
+        <div class="divider"></div>
+        @using (Html.BeginForm("MasterKeys", "MasterData", FormMethod.Post, new { id = "formMasterKey" }))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.IsEdit)
+            @Html.HiddenFor(m => m.MasterKeyInContext.PartitionKey)
+            @Html.HiddenFor(m => m.MasterKeyInContext.RowKey)
+
+            <div class="input-field col s4">
+                @Html.TextBoxFor(m => m.MasterKeyInContext.Name, new { id = "MasterKey_Name", @class = "validate" })
+                <label for="MasterKey_Name">Name</label>
+            </div>
+
+            <div class="input-field col s4">
+                <div class="switch">
+                    <label>
+                        Inactive
+                        @Html.CheckBoxFor(m => m.MasterKeyInContext.IsActive, new { id = "MasterKey_IsActive" })
+                        <span class="lever"></span>
+                        Active
+                    </label>
+                </div>
+            </div>
+
+            <div class="input-field col s12 right-align">
+                <button class="btn btnSubmit" type="submit">
+                    <i class="material-icons right">send</i>@(Model.IsEdit ? "Save" : "Create")
+                </button>
+                <button class="btn red lighten-1 reset" type="button">Reset</button>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#tblMasterKeys').DataTable();
+
+            $('.reset').on('click', function () {
+                $('[name="MasterKeyInContext.PartitionKey"]').val('');
+                $('[name="MasterKeyInContext.RowKey"]').val('');
+                $('[name="MasterKeyInContext.Name"]').val('');
+                $('[name="MasterKeyInContext.IsActive"]').prop('checked', false);
+                $('[name="IsEdit"]').val('false');
+                $('.btnSubmit').text('Create');
+                M.updateTextFields();
+            });
+
+            $(document).on('click', '.edit', function () {
+                $('[name="MasterKeyInContext.PartitionKey"]').val($(this).data('partitionkey'));
+                $('[name="MasterKeyInContext.RowKey"]').val($(this).data('rowkey'));
+                $('[name="MasterKeyInContext.Name"]').val($(this).data('name'));
+                $('[name="MasterKeyInContext.IsActive"]').prop('checked', $(this).data('isactive') === 'true');
+                $('[name="IsEdit"]').val('true');
+                $('.btnSubmit').text('Save');
+                M.updateTextFields();
+            });
+        });
+    </script>
+}

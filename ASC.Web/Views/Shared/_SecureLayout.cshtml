@@ -1,0 +1,143 @@
+﻿@using Microsoft.AspNetCore.Http
+@using ASC.Utilities
+@using ASC.Web.Data
+
+@inject IHttpContextAccessor UserHttpContext
+@inject INavigationCacheOperations navigationCache
+
+@{
+    Layout = "_MasterLayout";
+    var currentUser = UserHttpContext?.HttpContext?.User.GetCurrentUserDetails();
+}
+
+<!-- Header -->
+<header class="secureLayout">
+    <nav class="top-nav blue-grey lighten-1">
+        <div class="nav-wrapper row valign-wrapper">
+            <div class="col s12 valign-wrapper">
+                <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                <h5><a class="page-title">Trung tâm Dịch vụ Ô tô</a></h5>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Side NavBar -->
+    <ul id="nav-mobile" class="sidenav sidenav-fixed">
+        <li>
+            <div class="user-view">
+                <div class="background blue-grey lighten-1"></div>
+                <a href="#user"><img class="circle" src="~/images/male.png" alt="Ảnh đại diện"></a>
+                <a href="#name"><span class="white-text name">@(currentUser?.Name ?? "Khách")</span></a>
+                <a href="#email"><span class="white-text email">@(currentUser?.Email ?? "Không có email")</span></a>
+            </div>
+        </li>
+        @if (currentUser != null)
+        {
+            var navigationMenu = await navigationCache.GetNavigationCacheAsync();
+            @if (navigationMenu != null)
+            {
+                @await Component.InvokeAsync("ASC.Web.Navigation.LeftNavigation", navigationMenu)
+            }
+        }
+        <li><a class="collapsible-header" href="#"><i class="material-icons">dashboard</i> Bảng điều khiển</a></li>
+        <li class="collapsible collapsible-accordion">
+            <a class="collapsible-header">Quản lý người dùng <i class="material-icons">supervisor_account</i></a>
+            <div class="collapsible-body">
+                <ul>
+                    <li><a href="/Accounts/Account/Customers"><i class="material-icons">account_box</i> Khách hàng</a></li>
+                    <li><a href="/Accounts/Account/ServiceEngineers"><i class="material-icons">person_add</i> Kỹ sư dịch vụ</a></li>
+                </ul>
+            </div>
+        </li>
+        <li><a class="collapsible-header" href="#"><i class="material-icons">perm_data_setting</i> Yêu cầu dịch vụ</a></li>
+        <li><a class="collapsible-header" href="#"><i class="material-icons">message</i> Thông báo dịch vụ</a></li>
+        <li><a class="collapsible-header" href="#"><i class="material-icons">inbox</i> Khuyến mãi</a></li>
+        <li><a class="collapsible-header" href="/Accounts/Account/Profile"><i class="material-icons">settings</i> Hồ sơ</a></li>
+        <li>
+            <a id="ancrLogout" class="collapsible-header" href="javascript:void(0);"><i class="material-icons">exit_to_app</i> Đăng xuất</a>
+        </li>
+        <li>
+            <a id="ancrResetPassword" class="collapsible-header" href="javascript:void(0);"><i class="material-icons">lock</i> Đặt lại mật khẩu</a>
+        </li>
+        <form class="hide" method="post" id="logout_form" asp-area="Identity" asp-page="/Account/Logout">
+            <input type="submit" value="Đăng xuất" />
+        </form>
+        <form class="hide" method="post" id="resetPassword_form" asp-area="Identity" asp-page="/Account/InitiateResetPassword">
+        </form>
+    </ul>
+</header>
+
+<!-- Render Body -->
+<main class="secureLayout">
+    <div class="row margin-bottom-0px">
+        <div class="col s12">
+            @RenderBody()
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="page-footer blue-grey lighten-1 secureLayout">
+    <div class="row">
+        <div class="col l6 s12">
+            <h5 class="white-text">Về chúng tôi</h5>
+            <p class="grey-text text-lighten-4">
+                Trung tâm Dịch vụ Ô tô là công ty được chứng nhận để thực hiện các dịch vụ xe hơi. Hoạt động của xưởng chúng tôi bắt đầu từ tháng 10 năm 2010.
+                Chúng tôi tập trung chủ yếu vào việc cung cấp dịch vụ tốt hơn cho khách hàng, và nhờ sự nỗ lực, chúng tôi đã được trao giải "Dịch vụ Tốt nhất" năm 2008 chỉ trong một thời gian ngắn.
+            </p>
+        </div>
+        <div class="col l3 s12">
+            <h5 class="white-text">Dịch vụ bổ sung</h5>
+            <ul>
+                <li><a class="white-text" href="#">Dịch vụ</a></li>
+                <li><a class="white-text" href="#">Tài chính</a></li>
+                <li><a class="white-text" href="#">Xe đã qua sử dụng</a></li>
+                <li><a class="white-text" href="#">Bảo hiểm</a></li>
+                <li><a class="white-text" href="#">Trường dạy lái xe</a></li>
+            </ul>
+        </div>
+        <div class="col l3 s12">
+            <h5 class="white-text">Kết nối</h5>
+            <ul>
+                <li><a class="white-text" href="#">Facebook</a></li>
+                <li><a class="white-text" href="#">LinkedIn</a></li>
+                <li><a class="white-text" href="#">Twitter</a></li>
+                <li><a class="white-text" href="#">Youtube</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer-copyright row margin-bottom-0px">
+        <div class="col s12">
+            Được hỗ trợ bởi <a class="brown-text text-lighten-3" href="http://materializecss.com">Materialize</a>
+        </div>
+    </div>
+</footer>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('.sidenav').sidenav();
+            $('.collapsible').collapsible();
+        });
+    </script>
+
+    <script type="text/javascript">
+        $(function () {
+            $('#ancrLogout').click(function () {
+                $('#logout_form').submit();
+            });
+            $('#ancrResetPassword').click(function () {
+                $('#resetPassword_form').submit();
+            });
+        });
+    </script>
+
+    @RenderSection("Scripts", required: false)
+}

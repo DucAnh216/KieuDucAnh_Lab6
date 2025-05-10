@@ -1,0 +1,171 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@inject UserManager<IdentityUser> userManager
+@model ASC.Web.Areas.Accounts.Models.CustomerViewModel
+
+@{
+    Layout = "_SecureLayout";
+}
+
+<div class="row">
+    <div class="col s12">
+        <h5>Customers</h5>
+    </div>
+</div>
+<div class="divider"></div>
+
+<div class="col s12 padding-bottom-15px">
+    @if (Model.Customers != null && Model.Customers.Any())
+    {
+        <table class="highlight centered" id="tblCustomers">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>User Name</th>
+                    <th>Is Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var customer in Model.Customers)
+                {
+                    var claims = await userManager.GetClaimsAsync(customer);
+                    var isActiveClaim = claims.FirstOrDefault(c => c.Type == "IsActive");
+                    bool isActive = false;
+                    if (isActiveClaim != null)
+                    {
+                        bool.TryParse(isActiveClaim.Value, out isActive);
+                    }
+
+                    <tr data-isactive="@isActive.ToString().ToLower()" data-email="@customer.Email">
+                        <td>@customer.Email</td>
+                        <td>@(customer.UserName ?? "N/A")</td>
+                        <td>
+                            <img src="~/images/@(isActive ? "green_tick.png" : "red_cross.png")" alt="@(isActive ? "Active" : "Inactive")" />
+                        </td>
+                        <td>
+                            <i class="small material-icons edit cursor--hand">mode_edit</i>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="card blue-grey lighten-1">
+            <div class="card-content white-text">
+                <span class="card-title">No Customers Found</span>
+                <p>No customers found. Please add a customer to the system by logging in with a Google account.</p>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="row z-depth-3">
+    <div class="col s12 padding-0px">
+        <h5>Customer Details</h5>
+    </div>
+    <div class="divider"></div>
+
+    <form asp-controller="Account" asp-action="Customers" method="post" class="col s12" id="formUser">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Registration.IsEdit" id="Registration_IsEdit" />
+        <input type="hidden" asp-for="Registration.Email" id="Registration_Email" />
+
+        <div class="input-field col s6">
+            <label for="Input_Registration_Email">Email</label>
+            <input asp-for="Registration.Email" id="Input_Registration_Email" class="validate" readonly="@(Model.Registration.IsEdit ? "readonly" : null)" />
+            <span asp-validation-for="Registration.Email" class="helper-text red-text"></span>
+        </div>
+
+        <div class="input-field col s4">
+            <div class="switch">
+                <label>
+                    Inactive
+                    <input asp-for="Registration.IsActive" id="Registration_IsActive" type="checkbox" />
+                    <span class="lever"></span>
+                    Active
+                </label>
+            </div>
+        </div>
+
+        <div class="input-field col s2 right-align">
+            <button class="btn waves-effect waves-light btnSubmit" type="submit" name="action">
+                Submit <i class="material-icons right">send</i>
+            </button>
+            <button class="btn waves-effect waves-light red lighten-1 reset" type="button" name="action">
+                Reset
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            console.log('jQuery ready in Customers.cshtml');
+
+            try {
+                var table = $('#tblCustomers').DataTable({
+                    pageLength: 3,
+                    lengthMenu: [[3, 5, 10, -1], [3, 5, 10, "All"]],
+                    autoWidth: false
+                });
+                console.log('DataTable initialized');
+            } catch (e) {
+                console.error('DataTable error:', e);
+            }
+
+            $('.btnSubmit').attr('disabled', 'disabled');
+            console.log('Submit button disabled');
+
+            $(document).on('click', '.reset', function () {
+                console.log('Reset button clicked');
+                $('#formUser')[0].reset();
+                $('#Input_Registration_Email').removeAttr('readonly');
+                $('#Registration_IsEdit').val('False');
+                $('#Registration_IsActive').prop('checked', false);
+                $('.btnSubmit').attr('disabled', 'disabled');
+                try {
+                    M.updateTextFields();
+                    console.log('Materialize updated');
+                } catch (e) {
+                    console.error('Materialize error:', e);
+                }
+            });
+
+            if ($('#Registration_IsEdit').val() === 'True') {
+                $('#Input_Registration_Email').attr('readonly', 'readonly');
+                $('.btnSubmit').removeAttr('disabled');
+                console.log('Edit mode enabled');
+            }
+
+            $(document).on('click', '.edit', function () {
+                console.log('Edit button clicked');
+                var row = $(this).closest('tr');
+                var rowData = table.row(row).data();
+                var email = rowData[0];
+                var isActive = row.data('isactive') === 'true';
+
+                $('#Registration_IsEdit').val('True');
+                $('#Input_Registration_Email').val(email).attr('readonly', 'readonly');
+                $('#Registration_Email').val(email);
+                $('#Registration_IsActive').prop('checked', isActive);
+                $('.btnSubmit').removeAttr('disabled');
+
+                try {
+                    M.updateTextFields();
+                    console.log('Materialize updated');
+                } catch (e) {
+                    console.error('Materialize error:', e);
+                }
+            });
+
+            $(document).on('click', '.btnSubmit', function () {
+                console.log('Submit button clicked');
+                $('#Registration_Email').val($('#Input_Registration_Email').val());
+            });
+        });
+    </script>
+}
